@@ -1,5 +1,10 @@
   # Historical Model
   
+  ## Installation
+   Install using composer:
+    
+     composer require geeky/historical-model --dev
+     
   This package created for helping you to create a historical model/data for any model/data you want, so one of the solutions of creating a historical data os by creating a history table for the basic table.
   
   so if we have a table called employees with this columns:
