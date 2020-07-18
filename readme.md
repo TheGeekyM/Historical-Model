@@ -25,10 +25,14 @@
  you can create the historical model/data just by a very easy command  
   - `php artisan make:history-model`
 
-then you will be asked what model you want to make it historical, and the package will automatically get your columns and ask you column column with y/n if you to log it, and hola you will get your model and your migration file
+then you will be asked what model you want to make it historical,
+
+![Screenshot](https://i.ibb.co/3MTxsjF/Screenshot-from-2020-07-19-01-32-50.png)
+
+and the package will automatically get your columns and ask you column column with y/n if you to log it, and hola you will get your model and your migration file
 ready to migrate.
 
-
+![Screenshot](https://i.ibb.co/PwhQT2r/Screenshot-from-2020-07-19-01-33-25.png)
 
    
   * [Important](#imp)
