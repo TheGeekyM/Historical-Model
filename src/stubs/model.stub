@@ -1,0 +1,17 @@
+<?php
+
+namespace App;
+
+use Illuminate\Database\Eloquent\Model;
+
+/**
+ * Class {{class}}.
+ */
+class {{class}} extends Model
+{
+    protected $table = '{{table}}';
+
+    public $timestamps = false;
+
+    protected $fillable = [{{columns}}];
+}

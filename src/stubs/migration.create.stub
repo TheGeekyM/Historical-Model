@@ -1,0 +1,38 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+class {{class}} extends Migration
+{
+    /**
+     * Run the migrations.
+     *
+     * @return void
+     */
+    public function up()
+    {
+        Schema::create('{{table}}', function (Blueprint $table) {
+            $table->bigIncrements('id');
+            $table->unsignedInteger('{{historyTableForeignKey}}');
+            {{$columns}}
+            $table->enum('status_control', ['a','c'])->nullable()->index();
+            $table->dateTime('start_datetime')->index();
+            $table->dateTime('end_datetime')->nullable()->index();
+            $table->uuid('created_by_id')->nullable()->index();
+            $table->foreign({{historyTableForeignKey}})->references({{BaseTablePrimaryKey}})->on('{{BaseTable}}')->onUpdate('cascade')->onDelete('No Action');
+
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     *
+     * @return void
+     */
+    public function down()
+    {
+        Schema::dropIfExists('{{table}}');
+    }
+}

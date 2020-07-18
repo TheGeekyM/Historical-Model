@@ -1,0 +1,27 @@
+{
+  "name": "geeky/historical-model",
+  "description": "This package is to make a historical model for any model you want very easy and very quickly.",
+  "type": "library",
+  "license": "MIT",
+  "keywords": ["laravel","model","history","historical","historical model"],
+  "authors": [
+    {
+      "name": "Mohamed Emad",
+      "email": "thegeekym@gmail.com",
+      "role": "Back-End Developer"
+    }
+  ],
+  "minimum-stability": "stable",
+  "autoload": {
+    "psr-4": {
+      "Geeky\\Historical\\": "src/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "Geeky\\Historical\\HistoricalModelServiceProvider"
+      ]
+    }
+  }
+}
