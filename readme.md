@@ -5,6 +5,7 @@
     
      composer require geeky/historical-model --dev
      
+  ## About
   This package created for helping you to create a historical model/data for any model/data you want, so one of the solutions of creating a historical data os by creating a history table for the basic table.
   
   so if we have a table called employees with this columns:
@@ -27,6 +28,7 @@
   - created_by_id - stores the ID of the account that caused the row to be created
   - the_columns_you_choose_to_log - stores the actual data  
      
+ ## Usage
  you can create the historical model/data just by a very easy command  
   - `php artisan make:history-model`
 
@@ -45,3 +47,7 @@ ready to migrate.
         There are two an improtant things you should do after runing the above command:
         - first you should remove the `$table->timestamps()` fom the migration file
         - you should use the `Geeky\Historical\Concerns\Historical` trait file in your base model 
+ ## Todo List
+ - Add a command to sync the base data from the base table to the historical table
+ - Add the trait automatically to the base model
+ - Remove the timestamps() from creating from the migration file
