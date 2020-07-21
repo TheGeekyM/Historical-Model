@@ -2,10 +2,12 @@
 
 namespace Geeky\Historical\Console\Commands;
 
+use Geeky\Historical\Services\Generator;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Schema;
 
 class CreateHistoryModel extends Command
@@ -25,7 +27,7 @@ class CreateHistoryModel extends Command
      *
      * @var string
      */
-    protected $signature = 'make:history-model';
+    protected $signature = 'make:history-model {--m|migrate : Migrate your migration file} {--s|sync : Sync your data to the historical table}';
 
     /**
      * The console command description.
@@ -81,6 +83,14 @@ class CreateHistoryModel extends Command
         $this->info('Model published successfully.');
 
         $this->createMigrationFile();
+
+        if ($this->option('migrate') || $this->option('sync')) {
+            $this->runMigratCommand();
+        }
+
+        if ($this->option('sync')) {
+            $this->runSyncDataCommand($baseModel);
+        }
 
         $this->endOutput($baseModel);
     }
@@ -141,35 +151,16 @@ class CreateHistoryModel extends Command
 
     private function addColumnsStructure(): void
     {
-        $columns = array_merge($this->AddColumnsWithTypesToMigrationSchema(), $this->addDefaultColumnsToMigrationSchema());
+        $this->mapUnknownColumnsType();
 
+        $columns = array_merge($this->AddColumnsWithTypesToMigrationSchema(), $this->addDefaultColumnsToMigrationSchema());
         $columns = collect($columns)->implode(', ');
 
         $this->call('make:migration:schema', [
             'name' => "create_{$this->table}_history_table",
             '--schema' => $columns,
         ]);
-    }
-
-    /**
-     * @param $table
-     * @param $columns
-     */
-    private function getPrimaryKeysColumn($table, $columns): void
-    {
-        $indexes = Schema::getConnection()->getDoctrineSchemaManager()->listTableIndexes($table);
-        $keys = $indexes['primary']->getUnquotedColumns();
-
-        foreach ($keys as $key) {
-            $column = Schema::getConnection()->getDoctrineColumn($table, $key);
-            $columnName = $column->getName();
-
-            if (false === $columns->search($columnName)) {
-                continue;
-            }
-
-            $this->columns[] = $table.'_'.$columnName.':'.($column->getUnsigned() ? 'unsigned' : '').ucfirst($column->getType()->getName()).':foreign'.''.($column->getNotnull() ? ':nullable' : '');
-        }
+        dd('dd');
     }
 
     private function AddColumnsWithTypesToMigrationSchema(): array
@@ -178,13 +169,8 @@ class CreateHistoryModel extends Command
 
         foreach ($this->columns as $column) {
             $column = Schema::getConnection()->getDoctrineColumn($this->table, $column);
-            $columnName = $column->getName();
-
-            if ($columnName === $this->primaryKey) {
-                $columns[] = $this->table.'_'.$columnName.':'.($column->getUnsigned() ? 'unsigned' : '').ucfirst($column->getType()->getName()).':foreign'.''.($column->getNotnull() ? ':nullable' : '');
-            } else {
-                $columns[] = $columnName.':'.($column->getUnsigned() ? 'unsigned' : '').ucfirst($column->getType()->getName()).''.($column->getNotnull() ? ':nullable' : '');
-            }
+            $column = new Generator($this->table, $column, $this->primaryKey);
+            $columns[] = (string) $column;
         }
 
         return $columns;
@@ -218,6 +204,24 @@ class CreateHistoryModel extends Command
         return new $model();
     }
 
+    public function runMigratCommand(): void
+    {
+        $table = ucfirst($this->table);
+        $migrationFullPathName = (new \ReflectionClass("Create{$table}HistoryTable"))->getFileName();
+
+        $migrationBaseName = basename($migrationFullPathName);
+
+        $this->call('migrate', [
+            '--path' => 'database/migrations/'.$migrationBaseName,
+        ]);
+    }
+
+    public function runSyncDataCommand()
+    {
+        $this->call('historical-model:sync', [
+        ]);
+    }
+
     private function endOutput($baseModel): void
     {
         $this->info("\n|-------------------------------------------------- Important ----------------------------------------------------------------|");
@@ -226,5 +230,11 @@ class CreateHistoryModel extends Command
         $this->info('|-------------------------------------------------- Important ----------------------------------------------------------------|');
 
         $this->info("\n Done :D");
+    }
+
+    public function mapUnknownColumnsType(): void
+    {
+        $platform = DB::getDoctrineSchemaManager()->getDatabasePlatform();
+        $platform->registerDoctrineTypeMapping('geography', 'text');
     }
 }
