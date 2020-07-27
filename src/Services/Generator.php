@@ -3,6 +3,7 @@
 namespace Geeky\Historical\Services;
 
 use Doctrine\DBAL\Schema\Column;
+use Illuminate\Support\Str;
 
 class Generator
 {
@@ -68,29 +69,29 @@ class Generator
     /**
      * @param $table
      */
-    public function setColumnName(): void
+    private function setColumnName(): void
     {
-        $this->columnName = $this->column->getName() . ':';
+        $this->columnName = $this->column->getName().':';
     }
 
-    public function setColumnType()
+    private function setColumnType()
     {
         $this->columnType = (new Type($this->column))->getColumnType();
     }
 
-    public function setNullable(): void
+    private function setNullable(): void
     {
         $this->nullable = $this->column->getNotnull() ? ':nullable' : '';
     }
 
-    public function setUnsigned(): void
+    private function setUnsigned(): void
     {
         $this->unsigned = $this->column->getUnsigned() ? ':unsigned' : '';
     }
 
-    public function setForeign(): void
+    private function setForeign(): void
     {
-        $this->foreign = ($this->columnName === $this->primaryKey . ":") ? ':foreign' : '';
+        $this->foreign = ($this->columnName === $this->primaryKey.':') ? ':foreign' : '';
     }
 
     /**
@@ -98,7 +99,7 @@ class Generator
      */
     public function __toString()
     {
-        $columnName = $this->foreign ? $this->table.'_'.$this->columnName : $this->columnName;
+        $columnName = $this->foreign ? Str::singular($this->table).'_'.$this->columnName : $this->columnName;
 
         return $columnName.$this->unsigned.$this->columnType.$this->foreign.$this->nullable;
     }

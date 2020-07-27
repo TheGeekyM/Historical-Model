@@ -8,6 +8,7 @@ use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Schema;
 
 class CreateHistoryModel extends Command
@@ -27,7 +28,7 @@ class CreateHistoryModel extends Command
      *
      * @var string
      */
-    protected $signature = 'make:history-model {--m|migrate : Migrate your migration file} {--s|sync : Sync your data to the historical table}';
+    protected $signature = 'historical-model:make {--m|migrate : Migrate your migration file} {--s|sync : Sync your data to the historical table}';
 
     /**
      * The console command description.
@@ -80,13 +81,7 @@ class CreateHistoryModel extends Command
 
         $this->createModelFile();
 
-        $this->info('Model published successfully.');
-
         $this->createMigrationFile();
-
-        if ($this->option('migrate') || $this->option('sync')) {
-            $this->runMigratCommand();
-        }
 
         if ($this->option('sync')) {
             $this->runSyncDataCommand($baseModel);
@@ -98,14 +93,24 @@ class CreateHistoryModel extends Command
     /**
      * @throws FileNotFoundException
      */
-    private function createModelFile(): void
+    private function createModelFile()
     {
         $stub = $this->files->get(__DIR__.'/../../stubs/model.stub');
         $stub = $this->replaceModelClassName($stub);
         $stub = $this->replaceModelTableName($stub);
         $stub = $this->AddFillableColumns($stub);
+        $fileNamePath = base_path('app/').$this->table.'History'.'.php';
 
-        $this->files->put(base_path('app/').$this->table.'History'.'.php', $stub);
+        if ($this->files->exists($fileNamePath)) {
+            $this->warn('The history model is already existed before !!');
+
+            return;
+        }
+
+        $this->files->put($fileNamePath, $stub);
+        $this->info('Model published successfully.');
+
+        return;
     }
 
     private function createMigrationFile(): void
@@ -143,7 +148,7 @@ class CreateHistoryModel extends Command
         $columns = $this->columns->merge(['status_control', 'start_datetime', 'end_datetime', 'created_by_id']);
 
         $columns = collect($columns)->transform(function ($column) {
-            return ($column === $this->primaryKey) ? $this->table.'_'.$column : $column;
+            return ($column === $this->primaryKey) ? Str::singular($this->table).'_'.$column : $column;
         })->implode("', '");
 
         return str_replace('{{columns}}', "'".$columns."'", $stub);
@@ -156,11 +161,12 @@ class CreateHistoryModel extends Command
         $columns = array_merge($this->AddColumnsWithTypesToMigrationSchema(), $this->addDefaultColumnsToMigrationSchema());
         $columns = collect($columns)->implode(', ');
 
-        $this->call('make:migration:schema', [
+        $this->call('historical-model:migrate', [
             'name' => "create_{$this->table}_history_table",
             '--schema' => $columns,
+            '--model' => 0,
+            '--migrate' => $this->option('migrate') || $this->option('sync'),
         ]);
-        dd('dd');
     }
 
     private function AddColumnsWithTypesToMigrationSchema(): array
@@ -196,24 +202,12 @@ class CreateHistoryModel extends Command
      */
     private function getModelObjectOrFail($model)
     {
-        if (!class_exists($model)) {
-            $this->error('The model you specified does\'t exist');
-            exit();
+        if (class_exists($model)) {
+            return new $model();
         }
 
-        return new $model();
-    }
-
-    public function runMigratCommand(): void
-    {
-        $table = ucfirst($this->table);
-        $migrationFullPathName = (new \ReflectionClass("Create{$table}HistoryTable"))->getFileName();
-
-        $migrationBaseName = basename($migrationFullPathName);
-
-        $this->call('migrate', [
-            '--path' => 'database/migrations/'.$migrationBaseName,
-        ]);
+        $this->error("The model ({$model}) you specified doesn't exist");
+        exit();
     }
 
     public function runSyncDataCommand()
@@ -222,19 +216,18 @@ class CreateHistoryModel extends Command
         ]);
     }
 
-    private function endOutput($baseModel): void
-    {
-        $this->info("\n|-------------------------------------------------- Important ----------------------------------------------------------------|");
-        $this->info("| Use this trait `use App\Geeky\Concerns\Historical` in your base model `$baseModel`");
-        $this->warn('| In your migration file just remove this line `$table->timestamps()` we will do it automatically in the next release sorry :(|');
-        $this->info('|-------------------------------------------------- Important ----------------------------------------------------------------|');
-
-        $this->info("\n Done :D");
-    }
-
     public function mapUnknownColumnsType(): void
     {
         $platform = DB::getDoctrineSchemaManager()->getDatabasePlatform();
         $platform->registerDoctrineTypeMapping('geography', 'text');
+    }
+
+    private function endOutput($baseModel): void
+    {
+        $this->info("\n|-------------------------------------------------- Important ----------------------------------------------------------------|");
+        $this->info("| Use this trait `use App\Geeky\Concerns\Historical` in your base model `$baseModel`");
+        $this->info('|-------------------------------------------------- Important ----------------------------------------------------------------|');
+
+        $this->info("\n Done :D");
     }
 }

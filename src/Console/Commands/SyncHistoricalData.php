@@ -25,7 +25,7 @@ class SyncHistoricalData extends Command
     public function handle(): void
     {
         $this->columns = !empty($this->argument('columns')) ? explode(',', $this->argument('columns')) : [];
-        $baseModel = $this->getModelObjectOrFail($this->argument('base-model'));
+        $baseModel = $this->getModelObjectOrFail('"'.$this->argument('base-model').'"');
         $historicalModel = $this->getModelObjectOrFail($this->argument('historical-model'));
 
         $currentDateTime = Carbon::now()->tz('Africa/Cairo')->format('Y-m-d H:i:s');
@@ -44,7 +44,7 @@ class SyncHistoricalData extends Command
 
                 dd($row->diff($this->columns));
 
-                return $row->only($this->columns + ['start_datetime' , 'status_control' , 'end_datetime' , 'created_by_id']);
+                return $row->only($this->columns + ['start_datetime', 'status_control', 'end_datetime', 'created_by_id']);
             })->toArray();
 
             dd($rows);
@@ -65,11 +65,11 @@ class SyncHistoricalData extends Command
      */
     private function getModelObjectOrFail($model)
     {
-        if (!class_exists($model)) {
-            $this->error("The model ({$model}) you specified does't exist");
-            exit();
+        if (class_exists($model)) {
+            return new $model();
         }
 
-        return new $model();
+        $this->error("The model ({$model}) you specified doesn't exist");
+        exit();
     }
 }
